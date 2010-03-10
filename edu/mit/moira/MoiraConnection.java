@@ -1,17 +1,18 @@
 package edu.mit.moira;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
+import javax.naming.NamingException;
+
+import edu.mit.hesiod.Hesiod;
+import edu.mit.hesiod.HesiodException;
+import edu.mit.hesiod.HesiodResult;
 import edu.mit.moira.internal.*;
 
 
@@ -61,8 +62,13 @@ public class MoiraConnection {
 			server = System.getenv("MOIRASERVER");
 		}
 		if (server == null) {
-			// TODO hesiod
-			// hesiod_resolve("moira", "sloc");
+			try {
+				Hesiod h = Hesiod.getInstance();
+				HesiodResult hr = h.lookup("moira", "sloc");
+				server = hr.getResults(0);
+			} catch (Exception e) {
+				// ignore
+			}
 		}
 		if (server == null) {
 			server = Constants.MOIRA_SERVER;
@@ -78,7 +84,6 @@ public class MoiraConnection {
 		}
 
 		Socket conn = mr_connect_internal(server, port);
-		System.out.format("server = %s, port = %s\n", server, port);
 		if (conn == null) {
 			return (int) MoiraET.MR_CANT_CONNECT;
 		}
@@ -90,10 +95,18 @@ public class MoiraConnection {
 		if (port.startsWith("#")) {
 			portNum = Integer.parseInt(port.substring(1));
 		} else {
-			// TODO hesiod
 			// $ hesinfo moira_db service
 			// moira_db tcp 775
-
+			try {
+				Hesiod h = Hesiod.getInstance();
+				HesiodResult hr = h.lookup("moira_db", "service");
+				String result = hr.getResults(0);
+				String[] parts = result.split("\\s");
+				portNum = Integer.parseInt(parts[2]);
+			} catch (Exception e) {
+				// ignore
+			}
+			
 			// TODO /etc/services
 			// getportbyname(moira_db, tcp) => 775
 
