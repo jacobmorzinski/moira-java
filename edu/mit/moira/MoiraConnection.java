@@ -7,7 +7,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-
 import javax.naming.NamingException;
 
 import edu.mit.hesiod.Hesiod;
@@ -20,6 +19,10 @@ public class MoiraConnection {
 
 	/*
 	 * mrgdb compatibility magic
+	 * 
+	 * GDB was a generic database library.
+	 * It faded away, but Moira clients and servers still greet each
+	 * other with a legacy GDB exchange.
 	 * 
 	 * The data looks like this:
 	 * 
@@ -54,6 +57,7 @@ public class MoiraConnection {
 
 	static String challengeStr = "\0\0\0\066\0\0\0\004\001\001\001\001server_id\0parms\0host\0user\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0";
 	static String responseStr = "\0\0\0\061\0\0\0\003\0\001\001disposition\0server_id\0parms\0\0\0\0\001\0\0\0\001\0\0\0\0\001\0";
+	private static Socket conn = null;
 
 	public static int mr_connect (String server) {
 		String port = null;
@@ -83,7 +87,7 @@ public class MoiraConnection {
 			port = Constants.MOIRA_SERVER.substring(i + 1);
 		}
 
-		Socket conn = mr_connect_internal(server, port);
+		conn  = mr_connect_internal(server, port);
 		if (conn == null) {
 			return (int) MoiraET.MR_CANT_CONNECT;
 		}
@@ -111,8 +115,8 @@ public class MoiraConnection {
 			// getportbyname(moira_db, tcp) => 775
 
 			// If no other matches, check whether port string matches default
-			if (port.equals(Constants.DEFAULT_SERVICE)) {
-				portNum = 775;
+			if (portNum == -1 && port.equals(Constants.DEFAULT_SERVICE)) {
+				portNum = Constants.DEFAULT_PORT;
 			}
 			if (portNum == -1) {
 				return null;
