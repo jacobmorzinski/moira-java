@@ -1,4 +1,4 @@
-package mit.moira.internal;
+package edu.mit.moira.internal;
 
 /**
  * Copyright (C) 1987-1998 by the Massachusetts Institute of Technology

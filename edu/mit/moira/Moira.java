@@ -1,10 +1,10 @@
-package mit.moira;
+package edu.mit.moira;
 
-import mit.moira.internal.KrbET;
-import mit.moira.internal.MoiraET;
-import mit.moira.internal.UserRegET;
-import mit.moira.internal.Constants;
-import mit.moira.internal.MITCopyright;
+import edu.mit.moira.internal.Constants;
+import edu.mit.moira.internal.KrbET;
+import edu.mit.moira.internal.MITCopyright;
+import edu.mit.moira.internal.MoiraET;
+import edu.mit.moira.internal.UserRegET;
 
 
 public class Moira {

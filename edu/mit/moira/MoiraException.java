@@ -1,4 +1,4 @@
-package mit.moira;
+package edu.mit.moira;
 
 public class MoiraException extends Exception {
 

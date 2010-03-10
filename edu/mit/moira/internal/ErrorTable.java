@@ -1,4 +1,4 @@
-package mit.moira.internal;
+package edu.mit.moira.internal;
 
 import java.io.BufferedReader;
 import java.io.IOException;

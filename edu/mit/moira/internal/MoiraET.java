@@ -1,4 +1,4 @@
-package mit.moira.internal;
+package edu.mit.moira.internal;
 
 import java.util.Hashtable;
 
