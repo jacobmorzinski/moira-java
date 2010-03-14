@@ -7,7 +7,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import javax.naming.NamingException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import edu.mit.hesiod.Hesiod;
 import edu.mit.hesiod.HesiodException;
@@ -175,6 +179,54 @@ public class MoiraConnection {
 		return mrSock;
 	}
 	
+	int mr_do_call(MoiraParams params, MoiraParams reply) {
+		int status;
+		status = mr_send(params);
+		if (status == Constants.MR_SUCCESS) {
+			status = mr_receive(reply);
+		}
+		return status;
+	}
+	
+	int mr_send(MoiraParams params) {
+		ByteBuffer buf;
+		int bufLength; // C: unsigned long
+		int written;
+		List<Integer> argl = new ArrayList<Integer>();
+		
+		bufLength = 16; // length + version + opcode/status + argc
+		// For each param, we will transmit param length + the param + padding
+		if (params.argl != null) {
+			for (int i : params.argl) {
+				argl.add(i);
+				bufLength += 4 + i + 4;
+			}
+		} else {
+			for (byte[] b : params.args) {
+				argl.add(b.length);
+				bufLength += 4 + b.length + 4;
+			}
+		}
+		
+		buf = ByteBuffer.allocate(bufLength);
+		buf.order(ByteOrder.BIG_ENDIAN); // to be clear
+		buf.putInt(bufLength);
+		buf.putInt(Constants.MR_VERSION_2);
+		buf.putInt(params.moiraProcNo);
+		buf.putInt(params.args.length);
+		for (int i=0; i<params.args.length; i++) {
+			buf.putInt(argl.get(i));
+			buf.put(params.args[i]);
+			buf.putInt( (4-2 % 4) % 4); // pad to 4-byte boundary
+		}
+		return 0;
+	}
+
+	int mr_receive(MoiraParams reply) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 	void run(String[] args) {
 		;
 	}

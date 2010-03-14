@@ -1,0 +1,48 @@
+Notes about how Moira queries work.
+
+In the C library, code will typically call mr_query()
+C code that needs to save the results of the query for future action
+will typically use callproc to save the query data into callargs.
+Callproc can return MR_ABORT to stop saving more data or MR_CONT to continue.
+
+
+mr_query(name, argc, argv, callproc, callargs)  {
+  mr_params params = { procno=MR_QUERY, argv=(name+argv) };
+  mr_do_call(params, reply);
+  while (reply.status == MR_MORE_DATA) {
+    if (!stopcallbacks) { stopcallbacks=(*callproc)(reply.argv, callargs); }
+    mr_receive(_mr_conn, reply);
+  }
+}
+
+
+
+/* Moira RPC format:
+
+   4-byte total length (including these 4 bytes)
+   4-byte version number (MR_VERSION_2 == 2)
+   4-byte opcode (from client) or status (from server)
+   4-byte argc
+   for each item in argl: {
+   4-byte len, followed by null-terminated string,
+    padded to 4-byte boundary (the len doesn't include the padding)
+   }
+
+   (more packets follow, if coded status was MR_MORE_DATA)
+
+   All numbers are in network byte order.
+*/
+
+mr_do_call(mr_params params, mr_params reply) {
+  status = mr_send(_mr_conn, params);
+  if (status == MR_SUCCESS)
+    status = mr_receive(_mr_conn, reply);
+}
+
+mr_send(fd, params) {
+/* ...serialize params into RPC/wire format... */
+}
+
+mr_receive(fd, params) {
+/* ...serialize params from RPC/wire format... */
+}
