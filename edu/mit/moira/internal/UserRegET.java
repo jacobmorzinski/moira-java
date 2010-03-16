@@ -3,33 +3,33 @@ package edu.mit.moira.internal;
 import java.util.Hashtable;
 
 public class UserRegET {
-	private static Hashtable<Long, String> errMsgList;
+	private static Hashtable<Integer, String> errMsgList;
 
 	public static String getErrorMessage(long i) {
 	    return errMsgList.get(i);
 	}
 	
-	public static final long UREG_ALREADY_REGISTERED = -1094196992L;
-	public static final long UREG_USER_NOT_FOUND = -1094196991L;
-	public static final long UREG_UNKNOWN_HOST = -1094196990L;
-	public static final long UREG_UNKNOWN_SERVICE = -1094196989L;
-	public static final long UREG_UNKNOWN_REQUEST = -1094196988L;
-	public static final long UREG_BROKEN_PACKET = -1094196987L;
-	public static final long UREG_WRONG_VERSION = -1094196986L;
-	public static final long UREG_LOGIN_USED = -1094196985L;
-	public static final long UREG_INVALID_UNAME = -1094196984L;
-	public static final long UREG_NO_PASSWD_YET = -1094196983L;
-	public static final long UREG_NO_LOGIN_YET = -1094196982L;
-	public static final long UREG_DELETED = -1094196981L;
-	public static final long UREG_NOT_ALLOWED = -1094196980L;
-	public static final long UREG_KRB_TAKEN = -1094196979L;
-	public static final long UREG_MISC_ERROR = -1094196978L;
-	public static final long UREG_ENROLLED = -1094196977L;
-	public static final long UREG_ENROLL_NOT_ALLOWED = -1094196976L;
-	public static final long UREG_HALF_ENROLLED = -1094196975L;
+	public static final int UREG_ALREADY_REGISTERED = -1094196992;
+	public static final int UREG_USER_NOT_FOUND = -1094196991;
+	public static final int UREG_UNKNOWN_HOST = -1094196990;
+	public static final int UREG_UNKNOWN_SERVICE = -1094196989;
+	public static final int UREG_UNKNOWN_REQUEST = -1094196988;
+	public static final int UREG_BROKEN_PACKET = -1094196987;
+	public static final int UREG_WRONG_VERSION = -1094196986;
+	public static final int UREG_LOGIN_USED = -1094196985;
+	public static final int UREG_INVALID_UNAME = -1094196984;
+	public static final int UREG_NO_PASSWD_YET = -1094196983;
+	public static final int UREG_NO_LOGIN_YET = -1094196982;
+	public static final int UREG_DELETED = -1094196981;
+	public static final int UREG_NOT_ALLOWED = -1094196980;
+	public static final int UREG_KRB_TAKEN = -1094196979;
+	public static final int UREG_MISC_ERROR = -1094196978;
+	public static final int UREG_ENROLLED = -1094196977;
+	public static final int UREG_ENROLL_NOT_ALLOWED = -1094196976;
+	public static final int UREG_HALF_ENROLLED = -1094196975;
 	
 	static {
-		errMsgList = new Hashtable<Long, String>();
+		errMsgList = new Hashtable<Integer, String>();
 		errMsgList.put(UREG_ALREADY_REGISTERED, "User already registered");
 		errMsgList.put(UREG_USER_NOT_FOUND, "Unable to locate user in database");
 		errMsgList.put(UREG_UNKNOWN_HOST, "Unknown host Moira");
