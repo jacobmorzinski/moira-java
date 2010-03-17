@@ -190,6 +190,7 @@ public class MoiraConnection {
 	
 	int mr_send(MoiraParams params) {
 		ByteBuffer buf;
+		int relativePosition, padding;
 		int bufLength; // C: unsigned long
 		int written;
 		List<Integer> argl = new ArrayList<Integer>();
@@ -207,9 +208,8 @@ public class MoiraConnection {
 				bufLength += 4 + b.length + 4;
 			}
 		}
-		
 		buf = ByteBuffer.allocate(bufLength);
-		buf.order(ByteOrder.BIG_ENDIAN); // to be clear
+		buf.order(ByteOrder.BIG_ENDIAN); // to be explicit
 		buf.putInt(bufLength);
 		buf.putInt(Constants.MR_VERSION_2);
 		buf.putInt(params.moiraProcNo);
@@ -217,8 +217,27 @@ public class MoiraConnection {
 		for (int i=0; i<params.args.length; i++) {
 			buf.putInt(argl.get(i));
 			buf.put(params.args[i]);
-			buf.putInt( (4-2 % 4) % 4); // pad to 4-byte boundary
+			relativePosition = buf.position() % 4; // 0,1,2,3
+			padding = (4 - relativePosition) % 4;  // 0,3,2,1
+			byte[] pad = new byte[padding];
+			Arrays.fill(pad, (byte)0);
+			buf.put(pad);
 		}
+		// The earlier bufLength allocated 4 bytes for every padding.
+		// Some fields may have used less, so rewrite our header.
+		bufLength = buf.position();
+		buf.limit(bufLength);
+		buf.putInt(bufLength,0);
+		buf.rewind();
+
+		try {
+			OutputStream outS = conn.getOutputStream();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//written = outS.write(buf.array());
+
 		return 0;
 	}
 
