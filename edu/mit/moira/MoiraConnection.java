@@ -190,13 +190,14 @@ public class MoiraConnection {
 	
 	int mr_send(MoiraParams params) {
 		ByteBuffer buf;
-		int relativePosition, padding;
-		int bufLength; // C: unsigned long
-		int written;
+		int rel, padding;
+		int bufLength = 0;
 		List<Integer> argl = new ArrayList<Integer>();
 		
-		bufLength = 16; // length + version + opcode/status + argc
-		// For each param, we will transmit param length + the param + padding
+		bufLength += 16; // length + version + opcode/status + arg count
+		
+		// For each arg, buf need to be long enough to contain
+		// arg length + the arg itself + a few bytes of padding
 		if (params.argl != null) {
 			for (int i : params.argl) {
 				argl.add(i);
@@ -208,42 +209,134 @@ public class MoiraConnection {
 				bufLength += 4 + b.length + 4;
 			}
 		}
-		buf = ByteBuffer.allocate(bufLength);
-		buf.order(ByteOrder.BIG_ENDIAN); // to be explicit
-		buf.putInt(bufLength);
+		byte[] bArray = new byte[bufLength];
+		Arrays.fill(bArray, (byte) 0);
+		buf = ByteBuffer.wrap(bArray);
+		buf.position(4);                 // write bufLength later.
 		buf.putInt(Constants.MR_VERSION_2);
 		buf.putInt(params.moiraProcNo);
 		buf.putInt(params.args.length);
 		for (int i=0; i<params.args.length; i++) {
 			buf.putInt(argl.get(i));
 			buf.put(params.args[i]);
-			relativePosition = buf.position() % 4; // 0,1,2,3
-			padding = (4 - relativePosition) % 4;  // 0,3,2,1
-			byte[] pad = new byte[padding];
-			Arrays.fill(pad, (byte)0);
-			buf.put(pad);
+			int p = buf.position();
+			rel = p % 4;              // 0,1,2,3
+			padding = (4 - rel) % 4;  // 0,3,2,1
+			buf.position( p+padding );
 		}
-		// The earlier bufLength allocated 4 bytes for every padding.
-		// Some fields may have used less, so rewrite our header.
-		bufLength = buf.position();
+		// The initial estimate for bufLength allocated 4 bytes for the
+		// padding for each arg, but we really only used 0-3 bytes each.
+		bufLength = buf.position();   // get true bufLength
+		buf.putInt(bufLength,0);      // write bufLength
 		buf.limit(bufLength);
-		buf.putInt(bufLength,0);
 		buf.rewind();
 
+		OutputStream outS = null;
 		try {
-			OutputStream outS = conn.getOutputStream();
+			outS = conn.getOutputStream();
+			outS.write(bArray);
+			outS.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return MoiraET.MR_ABORTED;
 		}
-		//written = outS.write(buf.array());
 
-		return 0;
+		return Constants.MR_SUCCESS;
 	}
 
 	int mr_receive(MoiraParams reply) {
-		// TODO Auto-generated method stub
-		return 0;
+		int status = -1;
+
+		while (status == -1) {
+		    status = mr_cont_receive(reply);
+		}
+		return status;
+	}
+
+	int mr_cont_receive(MoiraParams reply) {
+		int size, more;
+		int length;
+		ByteBuffer rbuf;
+		InputStream inS;
+
+		try {
+			inS = conn.getInputStream();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return MoiraET.MR_NOT_CONNECTED;
+		}
+
+		if (reply.buf == null) {
+			byte[] lbuf = new byte[4];
+			try {
+				size = inS.read(lbuf, 0, 4);
+				if (size != 4) {
+					if (size == 0)
+						return MoiraET.MR_NOT_CONNECTED;
+					else
+						return MoiraET.MR_ABORTED;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				return MoiraET.MR_NOT_CONNECTED;
+			}
+			ByteBuffer lbbuf = ByteBuffer.wrap(lbuf);
+			length = lbbuf.getInt();
+			if (length > 8192)
+				return MoiraET.MR_INTERNAL;
+			reply.buf = ByteBuffer.allocate(length);
+			reply.buf.putInt(length);
+			return -1;
+		}
+		else {
+			rbuf = reply.buf;
+			length = rbuf.getInt(0);
+		}
+		
+		byte[] backing = rbuf.array();
+		int p = rbuf.position();
+		int limit = rbuf.limit();
+		try {
+			more = inS.read(backing, p, limit - p);
+			rbuf.position( p+more );
+			if (p+more < length)
+				return -1;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return MoiraET.MR_ABORTED;
+		}
+		
+		// If we reach here, then all data has been read
+		// and stored into rbuf.
+		rbuf.rewind();
+		rbuf.position(4);  // no need to re-read length
+
+		if (rbuf.getInt() != Constants.MR_VERSION_2)
+			return MoiraET.MR_VERSION_MISMATCH;
+		
+		reply.moiraStatus = rbuf.getInt();
+		int argc = rbuf.getInt();
+		if (argc > (rbuf.remaining())/8 )
+			return MoiraET.MR_INTERNAL;
+		
+		reply.argl = new int[argc];
+		reply.args = new byte[argc][];
+		for (int i=0; i<argc; i++) {
+			int len = rbuf.getInt();
+			byte[] b = new byte[len];
+			rbuf.get(b, 0, len);
+			reply.args[i] = b;
+			reply.argl[i] = len;
+			
+			p = rbuf.position();
+			int rel = p % 4;              // 0,1,2,3
+			int padding = (4 - rel) % 4;  // 0,3,2,1
+			rbuf.position( p+padding );
+
+		}
+			
+		return Constants.MR_SUCCESS;
 	}
 
 	void run(String[] args) {
