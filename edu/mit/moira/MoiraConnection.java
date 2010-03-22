@@ -160,9 +160,8 @@ public class MoiraConnection {
 		} catch (UnsupportedEncodingException e) {
 			// This should never happen, the Java spec says that "ISO-8859-1"
 			// should always be a supported encoding.
-			System.err.println("Fatal error, ISO-8859-1 not a supported encoding.");
-			e.printStackTrace();
-			System.exit(1);
+			throw new java.lang.InternalError(
+					"Internal error during MRGDB handshake: " + e);
 		} catch (UnknownHostException e) {
 			System.err.println("Couldn't look up the Moira server's address.");
 			System.err.println(e);
