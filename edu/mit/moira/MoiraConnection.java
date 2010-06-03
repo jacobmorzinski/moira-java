@@ -8,13 +8,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import edu.mit.hesiod.Hesiod;
-import edu.mit.hesiod.HesiodException;
 import edu.mit.hesiod.HesiodResult;
 import edu.mit.moira.internal.*;
 
@@ -25,8 +22,8 @@ public class MoiraConnection {
 	 * mrgdb compatibility magic
 	 * 
 	 * GDB was a generic database library.
-	 * It faded away, but Moira clients and servers still greet each
-	 * other with a legacy GDB exchange.
+	 * It faded away, but Moira clients and servers
+	 * still greet each other with a legacy GDB exchange.
 	 * 
 	 * The data looks like this:
 	 * 
@@ -61,6 +58,35 @@ public class MoiraConnection {
 
 	static String challengeStr = "\0\0\0\066\0\0\0\004\001\001\001\001server_id\0parms\0host\0user\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0";
 	static String responseStr = "\0\0\0\061\0\0\0\003\0\001\001disposition\0server_id\0parms\0\0\0\0\001\0\0\0\001\0\0\0\0\001\0";
+	static byte[] chal = new byte[] { 
+		0x00, 0x00, 0x00, 0x36, 
+		0x00, 0x00, 0x00, 0x04, 
+		0x01, 0x01, 0x01, 0x01,
+		's', 'e', 'r', 'v', 'e', 'r', '_', 'i', 'd', '\0',
+		'p', 'a', 'r', 'm', 's', '\0', 
+		'h', 'o', 's', 't', '\0',
+		'u', 's', 'e', 'r', '\0', 
+		0x00, 0x00, 0x00, 0x01, 
+		'\0', 
+		0x00, 0x00, 0x00, 0x01,
+		'\0', 
+		0x00, 0x00, 0x00, 0x01, 
+		'\0', 
+		0x00, 0x00, 0x00, 0x01, 
+		'\0', };
+	static byte[] resp = new byte[] {
+		0x00, 0x00, 0x00, 0x31, 
+		0x00, 0x00, 0x00, 0x03,
+		0x00, 0x01, 0x01,
+		'd', 'i', 's', 'p', 'o', 's', 'i', 't', 'i', 'o', 'n', '\0',
+		's', 'e', 'r', 'v', 'e', 'r', '_', 'i', 'd', '\0',
+		'p', 'a', 'r', 'm', 's', '\0', 
+		0x00, 0x00, 0x00, 0x01, 
+		0x00, 0x00, 0x00, 0x01,
+		'\0',
+		0x00, 0x00, 0x00, 0x01, 
+		'\0', };
+
 	private static Socket conn = null;
 
 	public static int mr_connect (String server) {
@@ -133,7 +159,11 @@ public class MoiraConnection {
 		try {
 			// Re-interpret the challenge and response strings as plain ASCII bytes.
 			byte[] challenge = challengeStr.getBytes("ISO-8859-1");
+			challenge = chal;
 			byte[] response = responseStr.getBytes("ISO-8859-1");
+			response = resp;
+//			challenge[10] += 1;
+//			response[10] += 1;
 			byte[] actualresponse = new byte[response.length];
 			int size, more;
 
@@ -166,7 +196,7 @@ public class MoiraConnection {
 			System.err.println("Couldn't look up the Moira server's address.");
 			System.err.println(e);
 		} catch (SocketException e) {
-			System.err.println("Couldn't set socket keepalive.");
+			System.err.println("Connection problem.");
 			System.err.println(e);
 		} catch (IOException e) {
 			System.err.println("I/O error while establishing connection.");
