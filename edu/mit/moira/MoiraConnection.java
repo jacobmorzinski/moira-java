@@ -11,11 +11,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.naming.NamingException;
+
 import edu.mit.hesiod.Hesiod;
+import edu.mit.hesiod.HesiodException;
 import edu.mit.hesiod.HesiodResult;
 import edu.mit.moira.internal.*;
 
 
+/**
+ * @author jmorzins
+ *
+ */
 public class MoiraConnection {
 
 	/*
@@ -89,6 +97,14 @@ public class MoiraConnection {
 
 	private static Socket conn = null;
 
+	/**
+	 * Connect to a Moira server and return a status code
+	 * 
+	 * @param server
+	 *            Can be in the general form host:port, where port can be a
+	 *            symbolic name (like "moira_db") or a number (like "#775")
+	 * @return A status code.
+	 */
 	public static int mr_connect (String server) {
 		String port = null;
 		
@@ -124,6 +140,18 @@ public class MoiraConnection {
 		return Constants.MR_SUCCESS;
 	}
 	
+	
+	/**
+	 * Connects to a specific server
+	 * 
+	 * @param server
+	 *            A string representing the server.
+	 * @param port
+	 *            A string representing the port. Can begin with "#" to be
+	 *            interpreted as a port number, else will result in a hesiod
+	 *            query for "port", "service" (e.g: "hesinfo moira_db service")
+	 * @return A Socket
+	 */
 	static Socket mr_connect_internal(String server, String port) {
 		int portNum = -1;
 		if (port.startsWith("#")) {
@@ -133,11 +161,13 @@ public class MoiraConnection {
 			// moira_db tcp 775
 			try {
 				Hesiod h = Hesiod.getInstance();
-				HesiodResult hr = h.lookup("moira_db", "service");
+				HesiodResult hr = h.lookup(port, "service");
 				String result = hr.getResults(0);
 				String[] parts = result.split("\\s");
 				portNum = Integer.parseInt(parts[2]);
-			} catch (Exception e) {
+			} catch (HesiodException e) {
+				// ignore
+			} catch (NamingException e) {
 				// ignore
 			}
 			

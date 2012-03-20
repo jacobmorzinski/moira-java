@@ -1,5 +1,3 @@
-//package com.drydog;
-
 /**
  * GetServiceByName.java
  *
@@ -28,6 +26,9 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/* package com.drydog; */
+
 
 // Java Import
 import java.util.StringTokenizer;
