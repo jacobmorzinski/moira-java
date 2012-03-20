@@ -13,8 +13,6 @@ public class Moira {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
-		int result = MoiraConnection.mr_connect("ttsp.mit.edu");
-		System.out.format("result = %d\n", result);
+		MoiraConnection.main(args);
 	}
 }
