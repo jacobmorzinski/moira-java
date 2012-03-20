@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -130,6 +131,7 @@ public class MoiraConnection {
 			int size, more;
 
 			mrSock = new Socket(server, portNum);
+//			System.out.format("mrSock = %s\n", mrSock);
 			mrSock.setKeepAlive(true);
 
 
@@ -158,8 +160,11 @@ public class MoiraConnection {
 		} catch (UnknownHostException e) {
 			System.err.println("Couldn't look up the Moira server's address.");
 			System.err.println(e);
+		} catch (ConnectException e) {
+			System.err.println("Couldn't connect.");
+			System.err.println(e);
 		} catch (SocketException e) {
-			System.err.println("Couldn't set socket keepalive.");
+			System.err.println("Socket error while establishing connection.");
 			System.err.println(e);
 		} catch (IOException e) {
 			System.err.println("I/O error while establishing connection.");
@@ -180,7 +185,13 @@ public class MoiraConnection {
         mr_conn.run(args);
 
 		int result = MoiraConnection.mr_connect("ttsp.mit.edu");
-		System.out.format("result = %d\n", result);
+		if (result != Constants.MR_SUCCESS) {
+			System.out.format("result = %d (%s)\n",
+					result,
+					MoiraET.getErrorMessage(result));
+		} else {
+			System.out.format("result = %d\n", result);
+		}
 	}
 
 }
