@@ -80,10 +80,10 @@ public class Constants {
      *
      */
 
-    /* Default Moira server to connect to */
+    /* Default Moira server to connect to.  Must be host:port */
     public static final int DEFAULT_PORT = 775;
     public static final String DEFAULT_SERVICE = "moira_db";
-    public static final String MOIRA_SERVER = "MOIRA.MIT.EDU:" + DEFAULT_SERVICE;
+    public static final String MOIRA_SERVER = "ttsp.MIT.EDU:" + DEFAULT_SERVICE;
 
 
     /* get_ace_use */
