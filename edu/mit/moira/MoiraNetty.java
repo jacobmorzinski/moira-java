@@ -11,6 +11,7 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import edu.mit.hesiod.Hesiod;
@@ -21,15 +22,6 @@ import edu.mit.moira.internal.Constants;
 /**
  * This class tests out a Netty driver for Moira.
  * 
- * Netty will need to have a GDB encoder/decoder.
- * 
- * The general gdb format is:
- * 
- * byte length // length of rest of packet
- * byte num // number of fields (field bytes to be read)
- * num * ( byte fieldType ) // describes what kind of fields follow
- * string names // field names, packed in one string with null terminated substrings
- * num * ( EITHER byte OR length + null-terminated string )
  * 
  * 
  * @author Jacob
@@ -57,7 +49,7 @@ public class MoiraNetty {
 
     public void run() {
 
-    	ChannelFactory factory = new NioClientSocketChannelFactory(
+    	final ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 
         // Configure the client.
@@ -81,9 +73,25 @@ public class MoiraNetty {
         MoiraNettyHandler handler =
             (MoiraNettyHandler) channel.getPipeline().getLast();
 
-        // Shut down all thread pools to exit.
-        factory.releaseExternalResources();
-//        bootstrap.releaseExternalResources();
+        
+        // Done.
+
+        // Must close channel before calling factory.releaseExternalResources()
+        ChannelFuture closeFuture = channel.getCloseFuture();
+        closeFuture.addListener(new ChannelFutureListener() {
+        	public void operationComplete(ChannelFuture future) throws Exception {
+				System.out.println("About to releaseExternalResources...");
+		        // Shut down all thread pools to exit.
+				factory.releaseExternalResources();
+				System.out.println("Done with releaseExternalResources.");
+			}
+		});
+        channel.close();
+        closeFuture.awaitUninterruptibly();
+        if (!closeFuture.isSuccess()) {
+        	closeFuture.getCause().printStackTrace();
+        }
+
     }
 
 
