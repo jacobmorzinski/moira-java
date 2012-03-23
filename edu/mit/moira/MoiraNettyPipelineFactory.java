@@ -11,8 +11,8 @@ public class MoiraNettyPipelineFactory implements ChannelPipelineFactory {
         ChannelPipeline pipeline = pipeline();
 
         // Add the codecs first,
-        pipeline.addLast("decoder", new GDBDecoder());
-        pipeline.addLast("encoder", new GDBEncoder());
+        pipeline.addLast("decoder", new MoiraRPCDecoder());
+        pipeline.addLast("encoder", new MoiraRPCEncoder());
 
         // and then business logic.
         pipeline.addLast("handler", new MoiraNettyHandler());

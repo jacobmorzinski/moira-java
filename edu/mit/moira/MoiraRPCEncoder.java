@@ -28,7 +28,7 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
  * @author jmorzins
  *
  */
-public class GDBEncoder extends OneToOneEncoder {
+public class MoiraRPCEncoder extends OneToOneEncoder {
 
 	@Override
 	protected Object encode(ChannelHandlerContext ctx, Channel channel,
