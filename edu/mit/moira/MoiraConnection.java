@@ -9,15 +9,11 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.naming.NamingException;
-
-import edu.mit.hesiod.Hesiod;
-import edu.mit.hesiod.HesiodException;
-import edu.mit.hesiod.HesiodResult;
 import edu.mit.moira.internal.*;
 
 
@@ -68,7 +64,7 @@ public class MoiraConnection {
 	static String challengeStr = "\0\0\0\066\0\0\0\004\001\001\001\001server_id\0parms\0host\0user\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0\0\0\0\001\0";
 	static String responseStr = "\0\0\0\061\0\0\0\003\0\001\001disposition\0server_id\0parms\0\0\0\0\001\0\0\0\001\0\0\0\0\001\0";
 	static byte[] chal = new byte[] { 
-		0x00, 0x00, 0x00, 0x36, 
+		0x00, 0x00, 0x00, 0x36, // 54 bytes follow this header
 		0x00, 0x00, 0x00, 0x04, 
 		0x01, 0x01, 0x01, 0x01,
 		's', 'e', 'r', 'v', 'e', 'r', '_', 'i', 'd', '\0',
@@ -84,7 +80,7 @@ public class MoiraConnection {
 		0x00, 0x00, 0x00, 0x01, 
 		'\0', };
 	static byte[] resp = new byte[] {
-		0x00, 0x00, 0x00, 0x31, 
+		0x00, 0x00, 0x00, 0x31, // 49 bytes follow this header
 		0x00, 0x00, 0x00, 0x03,
 		0x00, 0x01, 0x01,
 		'd', 'i', 's', 'p', 'o', 's', 'i', 't', 'i', 'o', 'n', '\0',
@@ -107,34 +103,10 @@ public class MoiraConnection {
 	 * @return A status code.
 	 */
 	public static int mr_connect (String server) {
-		String port = null;
+		String host = MoiraNetty.determineHost(server);
+		int port = MoiraNetty.determinePort(server);
 		
-		if (server == null) {
-			server = System.getenv("MOIRASERVER");
-		}
-		if (server == null) {
-			try {
-				Hesiod h = Hesiod.getInstance();
-				HesiodResult hr = h.lookup("moira", "sloc");
-				server = hr.getResults(0);
-			} catch (Exception e) {
-				// ignore
-			}
-		}
-		if (server == null) {
-			server = Constants.MOIRA_SERVER;
-		}
-		
-		int i = server.lastIndexOf(":");
-		if (i >= 0) {
-			port = server.substring(i + 1);
-		}
-		else {
-			i = Constants.MOIRA_SERVER.lastIndexOf(":");
-			port = Constants.MOIRA_SERVER.substring(i + 1);
-		}
-
-		conn  = mr_connect_internal(server, port);
+		conn  = mr_connect_internal(host, port);
 		if (conn == null) {
 			return (int) MoiraET.MR_CANT_CONNECT;
 		}
@@ -153,45 +125,19 @@ public class MoiraConnection {
 	 *            query for "port", "service" (e.g: "hesinfo moira_db service")
 	 * @return A Socket
 	 */
-	static Socket mr_connect_internal(String server, String port) {
-		int portNum = -1;
-		if (port.startsWith("#")) {
-			portNum = Integer.parseInt(port.substring(1));
-		} else {
-			// $ hesinfo moira_db service
-			// moira_db tcp 775
-			try {
-				Hesiod h = Hesiod.getInstance();
-				HesiodResult hr = h.lookup(port, "service");
-				String result = hr.getResults(0);
-				String[] parts = result.split("\\s");
-				portNum = Integer.parseInt(parts[2]);
-			} catch (HesiodException e) {
-				// ignore
-			} catch (NamingException e) {
-				// ignore
-			}
-			
-			// TODO /etc/services
-			// getportbyname(moira_db, tcp) => 775
-
-			// If no other matches, check whether port string matches default
-			if (portNum == -1 && port.equals(Constants.DEFAULT_SERVICE)) {
-				portNum = Constants.DEFAULT_PORT;
-			}
-			if (portNum == -1) {
-				return null;
-			}
-		}
+	static Socket mr_connect_internal(String server, int port) {
+		int portNum = port;
 
 		/* Do magic mrgdb initialization */
 		
 		Socket mrSock = null;
 		try {
 			// Re-interpret the challenge and response strings as plain ASCII bytes.
-			byte[] challenge = challengeStr.getBytes("ISO-8859-1");
+			byte[] challenge;
+//			challenge = challengeStr.getBytes(StandardCharsets.ISO_8859_1);
 			challenge = chal;
-			byte[] response = responseStr.getBytes("ISO-8859-1");
+			byte[] response;
+//			response = responseStr.getBytes(StandardCharsets.ISO_8859_1);
 			response = resp;
 //			challenge[10] += 1;
 //			response[10] += 1;
@@ -215,14 +161,16 @@ public class MoiraConnection {
 				}
 			}
 
-			String actualresponseStr = new String(actualresponse, "ISO-8859-1");
+			String actualresponseStr;
+			actualresponseStr = new String(actualresponse, "ISO-8859-1");
+//			actualresponseStr = new String(actualresponse, StandardCharsets.ISO_8859_1);
 			if (! responseStr.equals(actualresponseStr)) {
 				throw new MoiraException("Challenge/response failure during initial connection.");
 			}
 		} catch (UnsupportedEncodingException e) {
 			// This should never happen, the Java spec says that "ISO-8859-1"
 			// should always be a supported encoding.
-			throw new java.lang.InternalError(
+			throw new Error(
 					"Internal error during MRGDB handshake: " + e);
 		} catch (UnknownHostException e) {
 			System.err.println("Couldn't look up the Moira server's address.");
@@ -237,7 +185,7 @@ public class MoiraConnection {
 			System.err.println("I/O error while establishing connection.");
 			System.err.println(e);
 		} catch (MoiraException e) {
-			System.err.println(e);
+			e.printStackTrace();
 		}
 
 		return mrSock;
@@ -278,7 +226,7 @@ public class MoiraConnection {
 		buf = ByteBuffer.wrap(bArray);
 		buf.position(4);                 // write bufLength later.
 		buf.putInt(Constants.MR_VERSION_2);
-		buf.putInt(params.moiraProcNo);
+		buf.putInt(params.opcode);
 		buf.putInt(params.args.length);
 		for (int i=0; i<params.args.length; i++) {
 			buf.putInt(argl.get(i));
@@ -379,7 +327,7 @@ public class MoiraConnection {
 		if (rbuf.getInt() != Constants.MR_VERSION_2)
 			return MoiraET.MR_VERSION_MISMATCH;
 		
-		reply.moiraStatus = rbuf.getInt();
+		reply.opcode = rbuf.getInt();
 		int argc = rbuf.getInt();
 		if (argc > (rbuf.remaining())/8 )
 			return MoiraET.MR_INTERNAL;
@@ -408,10 +356,23 @@ public class MoiraConnection {
 	}
 	
 	public static void main(String[] args) {
-        MoiraConnection mr_conn = new MoiraConnection();
-        mr_conn.run(args);
+        String server = null;
+        
+		args = new String[] {"ttsp.mit.edu:moira_db", };
 
-		int result = MoiraConnection.mr_connect("ttsp.mit.edu");
+		if (args.length > 1) {
+            System.err.println(
+                    "Usage: " + MoiraConnection.class.getSimpleName() +
+                    " <host>:<port>");
+            return;
+        }
+		if (args.length == 1) {
+			server = args[0];
+		} else {
+			server = MoiraNetty.determineServer();
+		}
+
+		int result = MoiraConnection.mr_connect(server);
 		if (result != Constants.MR_SUCCESS) {
 			System.out.format("result = %d (%s)\n",
 					result,

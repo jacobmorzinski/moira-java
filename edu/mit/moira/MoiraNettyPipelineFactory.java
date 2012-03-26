@@ -10,9 +10,12 @@ public class MoiraNettyPipelineFactory implements ChannelPipelineFactory {
 	public ChannelPipeline getPipeline() throws Exception {
         ChannelPipeline pipeline = pipeline();
 
-        // Add the codecs first,
-        pipeline.addLast("decoder", new MoiraRPCDecoder());
-        pipeline.addLast("encoder", new MoiraRPCEncoder());
+        pipeline.addLast("gdbdecoder", new MoiraGDBDecoder());
+        
+        // These codecs are not used until after MRGDB initialization
+        // They are added in the handler. 
+//        pipeline.addLast("decoder", new MoiraRPCDecoder());
+//        pipeline.addLast("encoder", new MoiraRPCEncoder());
 
         // and then business logic.
         pipeline.addLast("handler", new MoiraNettyHandler());

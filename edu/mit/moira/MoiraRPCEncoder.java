@@ -1,9 +1,17 @@
 package edu.mit.moira;
 
+import java.nio.ByteOrder;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBufferFactory;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 
+import edu.mit.moira.internal.Constants;
 
 /**
  * 
@@ -26,16 +34,43 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
  * 
  * 
  * @author jmorzins
- *
+ * 
  */
+@Sharable
 public class MoiraRPCEncoder extends OneToOneEncoder {
 
 	@Override
 	protected Object encode(ChannelHandlerContext ctx, Channel channel,
 			Object msg) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+
+		if (!(msg instanceof MoiraParams)) {
+			return msg;
+		}
+
+		MoiraParams mp = (MoiraParams) msg;
+		
+		ChannelBufferFactory bf = channel.getConfig().getBufferFactory();
+		
+		ChannelBuffer body = ChannelBuffers.dynamicBuffer(bf);
+		
+		body.writeInt(Constants.MR_VERSION_2);
+		body.writeInt(mp.opcode);
+		body.writeInt(mp.args.length);
+		// Now loop over the args
+		for (byte[] ba : mp.args) {
+			int argLen = ba.length;
+			body.writeInt(argLen);
+			body.writeBytes(ba);
+			int remainder = argLen % 4;         // 0,1,2,3
+			int padding = (4 - remainder) % 4;  // 0,3,2,1
+			body.writeZero(padding);
+		}
+		
+		int totalLength = body.readableBytes() + 4;  // length includes the header
+		ChannelBuffer header = bf.getBuffer(body.order(), 4);
+		header.writeInt(totalLength);
+
+		return ChannelBuffers.wrappedBuffer(header, body);
 	}
-
-
+	
 }

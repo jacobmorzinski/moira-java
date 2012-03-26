@@ -51,39 +51,36 @@ public class MoiraNetty {
 
     	final ChannelFactory factory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-
-        // Configure the client.
 		ClientBootstrap bootstrap = new ClientBootstrap(factory);
-
-        // Set up the event pipeline factory.
         bootstrap.setPipelineFactory(new MoiraNettyPipelineFactory());
 
-        // Make a new connection.
+        // TODO: better error handling of connect() issues
         ChannelFuture connectFuture =
             bootstrap.connect(new InetSocketAddress(host, port));
-
-        // Wait until the connection is made successfully.
         connectFuture.awaitUninterruptibly();
         if (!connectFuture.isSuccess()) {
-        	connectFuture.getCause().printStackTrace();
+			Throwable e = connectFuture.getCause();
+			throw new RuntimeException(e);
         }
         Channel channel = connectFuture.getChannel();
 
-        // Get the handler instance to retrieve the answer.
         MoiraNettyHandler handler =
             (MoiraNettyHandler) channel.getPipeline().getLast();
 
-        
+        long sleepTimeMillis = 2000;
+        try {
+			Thread.sleep(sleepTimeMillis);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
         // Done.
 
         // Must close channel before calling factory.releaseExternalResources()
         ChannelFuture closeFuture = channel.getCloseFuture();
         closeFuture.addListener(new ChannelFutureListener() {
         	public void operationComplete(ChannelFuture future) throws Exception {
-				System.out.println("About to releaseExternalResources...");
 		        // Shut down all thread pools to exit.
 				factory.releaseExternalResources();
-				System.out.println("Done with releaseExternalResources.");
 			}
 		});
         channel.close();
@@ -105,7 +102,7 @@ public class MoiraNetty {
 	 * 
 	 * @return The server specifier
 	 */
-	private static String determineServer() {
+	static String determineServer() {
 		String server = null;
 		try {
 			server = System.getenv("MOIRASERVER");
@@ -137,7 +134,7 @@ public class MoiraNetty {
 	 * @param server A string in the form <host> or <host>:<port>
 	 * @return
 	 */
-	private static String determineHost(String server) {
+	static String determineHost(String server) {
 		int i = server.lastIndexOf(":");
 		if (i >= 0) {
 			return server.substring(0, i);
@@ -155,7 +152,7 @@ public class MoiraNetty {
 	 * @param server A string in the form <host> or <host>:<port>
 	 * @return
 	 */
-	private static int determinePort(String server) {
+	static int determinePort(String server) {
 		String port = null;
 		
 		int i = server.lastIndexOf(":");
@@ -212,7 +209,7 @@ public class MoiraNetty {
 		String host = null;
 		int port = -1;
 		
-		args = new String[] {"ttsp.mit.edu:moira_db"};
+		args = new String[] {"ttsp.mit.edu:moira_db", };
 		
 		if (args.length > 1) {
             System.err.println(
