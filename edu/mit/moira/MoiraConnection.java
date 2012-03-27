@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -132,12 +132,13 @@ public class MoiraConnection {
 		
 		Socket mrSock = null;
 		try {
+//			Charset iso8859 = Charset.forName("ISO-8859-1");
 			// Re-interpret the challenge and response strings as plain ASCII bytes.
 			byte[] challenge;
-//			challenge = challengeStr.getBytes(StandardCharsets.ISO_8859_1);
+//			challenge = challengeStr.getBytes(iso8859);
 			challenge = chal;
 			byte[] response;
-//			response = responseStr.getBytes(StandardCharsets.ISO_8859_1);
+//			response = responseStr.getBytes(iso8859);
 			response = resp;
 //			challenge[10] += 1;
 //			response[10] += 1;
@@ -163,6 +164,7 @@ public class MoiraConnection {
 
 			String actualresponseStr;
 			actualresponseStr = new String(actualresponse, "ISO-8859-1");
+//			actualresponseStr = new String(actualresponse, iso8859);
 //			actualresponseStr = new String(actualresponse, StandardCharsets.ISO_8859_1);
 			if (! responseStr.equals(actualresponseStr)) {
 				throw new MoiraException("Challenge/response failure during initial connection.");

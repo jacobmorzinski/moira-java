@@ -67,7 +67,7 @@ public class MoiraNetty {
         MoiraNettyHandler handler =
             (MoiraNettyHandler) channel.getPipeline().getLast();
 
-        long sleepTimeMillis = 2000;
+        long sleepTimeMillis = 1000;
         try {
 			Thread.sleep(sleepTimeMillis);
 		} catch (InterruptedException e) {

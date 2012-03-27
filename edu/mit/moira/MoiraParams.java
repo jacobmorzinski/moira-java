@@ -2,7 +2,6 @@ package edu.mit.moira;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import edu.mit.moira.internal.Constants;
@@ -18,7 +17,7 @@ public class MoiraParams {
 		this.args = new byte[strings.length][];
 		this.argl = new int[strings.length];
 		
-		Charset iso8859 = StandardCharsets.ISO_8859_1;
+		Charset iso8859 = Charset.forName("ISO-8859-1");
 		for (int i=0; i<strings.length; i++) {
 			byte[] ba = strings[i].getBytes(iso8859);
 			this.args[i] = Arrays.copyOf(ba, ba.length + 1);

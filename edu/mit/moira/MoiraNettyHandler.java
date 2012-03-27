@@ -62,13 +62,13 @@ public class MoiraNettyHandler extends SimpleChannelUpstreamHandler {
 						pipeline.remove(s);
 					}
 				}
-				MoiraParams mp = new MoiraParams(Constants.MR_QUERY, "gprn", "sipb");
+				MoiraParams mp = new MoiraParams(Constants.MR_QUERY, "gmol", "gaccounts");
 				e.getChannel().write(mp);
 			} else {
 				throw new MoiraException("Challenge/response failure during initial connection.");
 			}
 		} else { // (isInitialized == true)
-			logger.info("Moira response");
+//			logger.info("Moira response");
 			System.out.println(e.getMessage());
 		}
 	}
